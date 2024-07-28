@@ -74,9 +74,6 @@ It is recommended to use **Git version 2.20 or later** to ensure compatibility w
 2. Click `Rollback`.
 3. Confirm the rollback in the prompt.
 
-### Other Operations
-
-1. In history View 
 
 ## Usage From Code
 
