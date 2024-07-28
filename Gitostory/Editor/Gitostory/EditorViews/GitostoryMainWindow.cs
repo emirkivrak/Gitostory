@@ -37,6 +37,7 @@ namespace GitostorySpace
         private GitostoryAssetCommitDisplayBaseView _displayCommitView;
         private GitostoryActionState _actionState = GitostoryActionState.NoHistory;
         private string _statusCode;
+        private string _branchName;
 
 
         #region Unity Methods
@@ -63,27 +64,14 @@ namespace GitostorySpace
         {
             if (_actionState == GitostoryActionState.ShowHistory || _actionState == GitostoryActionState.InCommitPreview)
             {
-
-                // Show the header
                 GUILayout.Label($"Story of {_assetName}", GitostoryGUIExtensions.CreateHeaderStyle(Color.white));
-
 
                 ShowFileStatusAndActions();
 
                 CheckAndDrawComparison();
 
-                // Inform user if preview is not supported
-                //if (!_isPreviewSupported)
-                //{
-                //  GUILayout.Label("Preview is not supported in this asset type.", GitostoryGUIExtensions.CreateTextStyle(Color.red));
-                // }
-
-                // Start scroll of stories
-                _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
-
                 DisplayAllCommits();
-
-                GUILayout.EndScrollView();
+               
             }
             else if (_actionState == GitostoryActionState.NoHistory)
             {
@@ -196,12 +184,16 @@ namespace GitostorySpace
 
         private void DisplayAllCommits()
         {
+            // Start scroll of stories
+            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
             foreach (GitostoryPastCommitData commit in _history)
             {
                 var isInInspect = commit.CommitHash.Equals(_inspectingCommit.CommitHash);
 
                 DisplayCommit(commit, isInInspect, _isPreviewSupported);
             }
+            GUILayout.EndScrollView();
+
         }
 
         private void DisplayCommit(GitostoryPastCommitData commit, bool isInInspect, bool isPreviewSupported)
@@ -216,18 +208,31 @@ namespace GitostorySpace
         private void UpdateStatus(string filePath)
         {
             _statusCode = _gitAPI.IsFileModified(filePath) ? "Modified" : "Unmodified";
+            _branchName = _gitAPI.GetCurrentBranchName();
         }
 
         private void ShowFileStatusAndActions()
         {
-            Refresh();
+            DrawButtons();
             GUILayout.Space(10);
-            EditorGUILayout.HelpBox($"Status: {_statusCode}", MessageType.Info);
-            ShowResetUnstagedChangesButton();
+            GUILayout.Label($"File Status: {_statusCode}",GitostoryGUIExtensions.CreateBoldTextStyle());
+            GUILayout.Label($"Current Branch: {_branchName}",GitostoryGUIExtensions.CreateBoldTextStyle());
         }
 
-        private void ShowResetUnstagedChangesButton()
+    
+
+    
+
+        private void DrawButtons()
         {
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Refresh"))
+            {
+                // Refresh current file
+                Initialize(_absolutePath, _relativePath, _assetType);
+            }
+
+          
             if (_statusCode.Contains("Modified"))
             {
                 EditorGUILayout.BeginHorizontal();
@@ -237,20 +242,29 @@ namespace GitostorySpace
                 }
                 EditorGUILayout.EndHorizontal();
             }
-        }
 
-        private void Refresh()
-        {
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Refresh"))
+            if (GUILayout.Button("Add to .gitignore"))
             {
-                // Refresh current file
-                Initialize(_absolutePath, _relativePath, _assetType);
+                AddFileToGitignore(_relativePath);
             }
+
+            if (GUILayout.Button("Open Gitostory Settings"))
+            {
+                GitostorySettingsEditor.ShowWindow();
+            }
+
             EditorGUILayout.EndHorizontal();
         }
 
-        private void TryResetUnstagedChanges()
+        private void AddFileToGitignore(string filePath)
+        {
+            if (EditorUtility.DisplayDialog("Add to .gitignore", $"Are you sure you want to add {filePath} to .gitignore?", "Yes", "No"))
+            {
+                Gitostory.AddToGitignore(filePath);
+            }
+        }
+
+            private void TryResetUnstagedChanges()
         {
             if (EditorUtility.DisplayDialog("Reset Unstaged Changes", "Are you sure you want to reset changes?", "Yes", "No"))
             {

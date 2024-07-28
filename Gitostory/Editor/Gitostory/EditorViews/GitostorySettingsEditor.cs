@@ -10,9 +10,11 @@ namespace GitostorySpace
     {
         private string tempRoot;
         private string repositoryRoot;
+        private string gitignorePath;
         private bool isRepositoryValid;
+        private bool resetWithMetaFile;
+        private bool trackRenamesAndFolderChanges;
 
-        private const string GITIGNORE_FILE_NAME = ".gitignore";
 
         [MenuItem("Window/Gitostory/Gitostory Settings")]
         public static void ShowWindow()
@@ -29,6 +31,9 @@ namespace GitostorySpace
         {
             tempRoot = GitostoryConfig.Paths.TEMP_ROOT;
             repositoryRoot = GitostoryConfig.Paths.REPOSITORY_ROOT;
+            gitignorePath = GitostoryConfig.Paths.GITIGNORE_PATH;
+            resetWithMetaFile = GitostoryConfig.Preferences.ResetWithMetaFile;
+            trackRenamesAndFolderChanges = GitostoryConfig.Preferences.TrackRenamesAndFolderChanges;
             isRepositoryValid = IsValidRepository(repositoryRoot);
         }
 
@@ -38,7 +43,10 @@ namespace GitostorySpace
 
             DrawTempRootField();
             DrawRepositoryRootField();
+            DrawGitignorePathField();
             DrawValidationMessage();
+            DrawResetWithMetaFileOption();
+            DrawTrackRenamesAndFolderChangesOption();
 
             GUILayout.Space(10);
 
@@ -54,14 +62,12 @@ namespace GitostorySpace
                 RestoreDefaults();
             }
 
-
             GUILayout.Space(10);
 
             if (GUILayout.Button("Add Gitostory Temp folder to .gitignore"))
             {
-                AddTempFolderToGitignore();
+                Gitostory.AddToGitignore(GitostoryConfig.Paths.TEMP_ROOT);
             }
-
         }
 
         private void DrawTempRootField()
@@ -93,6 +99,20 @@ namespace GitostorySpace
             }
         }
 
+        private void DrawGitignorePathField()
+        {
+            GUILayout.Label("Gitignore Relative File Path", EditorStyles.label);
+            gitignorePath = EditorGUILayout.TextField(gitignorePath);
+            if (GUILayout.Button("Select Gitignore File"))
+            {
+                string selectedPath = EditorUtility.OpenFilePanel("Select Gitignore File", gitignorePath, "");
+                if (!string.IsNullOrEmpty(selectedPath))
+                {
+                    gitignorePath = selectedPath;
+                }
+            }
+        }
+
         private void DrawValidationMessage()
         {
             if (!isRepositoryValid)
@@ -105,10 +125,25 @@ namespace GitostorySpace
             }
         }
 
+        private void DrawResetWithMetaFileOption()
+        {
+            GUILayout.Label("Reset with Meta File", EditorStyles.label);
+            resetWithMetaFile = EditorGUILayout.Toggle(resetWithMetaFile);
+        }
+
+        private void DrawTrackRenamesAndFolderChangesOption()
+        {
+            GUILayout.Label("Track Renames and Folder Changes", EditorStyles.label);
+            trackRenamesAndFolderChanges = EditorGUILayout.Toggle(trackRenamesAndFolderChanges);
+        }
+
         private void SaveConfiguration()
         {
             GitostoryConfig.Paths.TEMP_ROOT = tempRoot;
             GitostoryConfig.Paths.REPOSITORY_ROOT = repositoryRoot;
+            GitostoryConfig.Paths.GITIGNORE_PATH = gitignorePath;
+            GitostoryConfig.Preferences.ResetWithMetaFile = resetWithMetaFile;
+            GitostoryConfig.Preferences.TrackRenamesAndFolderChanges = trackRenamesAndFolderChanges;
             isRepositoryValid = IsValidRepository(repositoryRoot);
 
             if (!Directory.Exists(tempRoot))
@@ -123,32 +158,14 @@ namespace GitostorySpace
         {
             EditorPrefs.DeleteKey(GitostoryConfig.Paths.TEMP_ROOT_KEY_DEFAULT);
             EditorPrefs.DeleteKey(GitostoryConfig.Paths.REPOSITORY_ROOT_KEY_DEFAULT);
+            EditorPrefs.DeleteKey(GitostoryConfig.Paths.GITIGNORE_PATH_KEY_DEFAULT);
+            EditorPrefs.DeleteKey(GitostoryConfig.Preferences.RESET_WITH_META_FILE_KEY_DEFAULT);
+            EditorPrefs.DeleteKey(GitostoryConfig.Preferences.TRACK_RENAMES_AND_FOLDER_CHANGES_KEY_DEFAULT);
             LoadSettings();
             EditorUtility.DisplayDialog("Gitostory Config", "Defaults Restored", "OK");
         }
 
-        private void AddTempFolderToGitignore()
-        {
-            string gitignorePath = Path.Combine("", GITIGNORE_FILE_NAME) ;
-            if (!File.Exists(gitignorePath))
-            {
-                Debug.Log(".gitignore is not found, creating new.");
-                File.WriteAllText(gitignorePath, GitostoryConfig.Paths.TEMP_ROOT + Environment.NewLine);
-            }
-            else
-            {
-                var lines = File.ReadAllLines(gitignorePath);
-                if (!Array.Exists(lines, line => line.Trim() == GitostoryConfig.Paths.TEMP_ROOT.Trim()))
-                {
-                    Debug.Log(".gitigore is found, updating.");
-                    File.AppendAllText(gitignorePath, GitostoryConfig.Paths.TEMP_ROOT + Environment.NewLine);
-                }
-                else
-                {
-                    Debug.Log("Temp folder is already in .gitignore");
-                }
-            }
-        }
+
 
         private bool IsValidRepository(string path)
         {

@@ -18,23 +18,28 @@ public class GitostoryAssetPreviewController
     {
         if (typeOfAsset == GitostorySupportedType.Script)
         {
-            Debug.LogWarning("Previewing script asset");
+            // Change the previous version path's extension to .txt
             previousVersionPath = Path.ChangeExtension(previousVersionPath, ".txt");
+
             // Correct way to get or create the window
             _scriptShowWindow = EditorWindow.GetWindow<GitostoryTextEditor>("Gitostory", true);
 
+            // Read the current and previous version contents
             string currentVersionContent = File.ReadAllText(currentVersionPath);
             string previousVersionContent = File.ReadAllText(previousVersionPath);
 
-            Debug.Log(previousVersionContent);
+            // Add the prominent line at the beginning of the previous version content
+            string warningMessage = "############# GITOSTORY CONVERTED PREVIOUS VERSION TO TXT FOR PREVENTING COMPILE ERRORS ############# \n";
+            previousVersionContent = warningMessage + previousVersionContent;
 
+            // Write the modified previous version content back to the .txt file
+            File.WriteAllText(previousVersionPath, previousVersionContent);
 
+            // Set the text in the editor window and show it
             _scriptShowWindow.SetText(currentVersionContent, previousVersionContent, currentVersionPath, previousVersionPath);
             _scriptShowWindow.Show();
 
-
-            // change file's extension to previous extension
-
+            // Change file's extension back to previous extension if needed
         }
         else if (typeOfAsset == GitostorySupportedType.Prefab)
         {

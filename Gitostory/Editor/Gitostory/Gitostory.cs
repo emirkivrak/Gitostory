@@ -166,7 +166,13 @@ namespace GitostorySpace
         public bool GitResetSingleFile(string filePath)
         {
             var headCommit = _repo.Head.Tip;
-            return Rollback(headCommit.Sha, filePath);
+            if (Rollback(headCommit.Sha, filePath))
+            {
+                // Stage the file to update its status in the index
+                Commands.Stage(_repo, filePath);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -188,40 +194,45 @@ namespace GitostorySpace
         /// <returns>True if the rollback was successful; otherwise, false.</returns>
         public bool Rollback(string commitHash, string filePath)
         {
-            Commit commit = _repo.Commits.FirstOrDefault(c => c.Sha.StartsWith(commitHash));
-            if (commit == null)
+            try
             {
-                Debug.LogError("Commit not found.");
-                return false;
-            }
-
-            var treeEntry = commit[filePath];
-            if (treeEntry?.TargetType == TreeEntryTargetType.Blob)
-            {
-                Blob blob = (Blob)treeEntry.Target;
-                string fullFilePath = Path.Combine(_repositoryPath, filePath).Replace("\\.git", "");
-
-                try
+                Commit commit = _repo.Commits.FirstOrDefault(c => c.Sha.StartsWith(commitHash));
+                if (commit == null)
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(fullFilePath));
-                    using (var contentStream = blob.GetContentStream())
-                    {
-                        using (var fileStream = File.Create(fullFilePath))
-                        {
-                            contentStream.CopyTo(fileStream);
-                        }
-                    }
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"Exception occurred during rollback: {ex.Message}");
+                    Debug.LogError("Commit not found.");
                     return false;
                 }
+
+                var filesToRollback = new List<string> { filePath, filePath + ".meta" };
+
+                foreach (var file in filesToRollback)
+                {
+                    var treeEntry = commit[file];
+                    if (treeEntry?.TargetType != TreeEntryTargetType.Blob)
+                    {
+                        Debug.LogError($"File not found in commit: {file}");
+                        continue;
+                    }
+
+                    Blob blob = (Blob)treeEntry.Target;
+                    string fullFilePath = Path.Combine(_repositoryPath, file).Replace("\\.git", "");
+
+                    // Ensure directory exists
+                    Directory.CreateDirectory(Path.GetDirectoryName(fullFilePath));
+
+                    // Write the content to the file
+                    using (var contentStream = blob.GetContentStream())
+                    using (var fileStream = File.Create(fullFilePath))
+                    {
+                        contentStream.CopyTo(fileStream);
+                    }
+                }
+
+                return true;
             }
-            else
+            catch (Exception ex)
             {
-                Debug.LogError("File not found in commit.");
+                Debug.LogError($"Exception occurred during rollback: {ex.Message}");
                 return false;
             }
         }
@@ -229,6 +240,27 @@ namespace GitostorySpace
         #endregion
 
         #region File Status Methods
+
+        public string GetCurrentBranchName()
+        {
+            try
+            {
+                if (_repo == null)
+                {
+                    Debug.LogError("Repository not initialized.");
+                    return null;
+                }
+
+                var branch = _repo.Head;
+                return branch.FriendlyName;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Exception occurred: {ex.Message}");
+                return null;
+            }
+        }
+
 
         public bool IsFileModified(string filePath)
         {
@@ -309,6 +341,31 @@ namespace GitostorySpace
             return Exists(statusEntry.State);
         }
 
+        #endregion
+
+        #region Git Ignore
+        public static void AddToGitignore(string pathToAdd)
+        {
+            string gitignorePath = GitostoryConfig.Paths.GITIGNORE_PATH;
+            if (!File.Exists(gitignorePath))
+            {
+                Debug.Log(".gitignore is not found, creating new.");
+                File.WriteAllText(gitignorePath, pathToAdd + Environment.NewLine);
+            }
+            else
+            {
+                var lines = File.ReadAllLines(gitignorePath);
+                if (!Array.Exists(lines, line => line.Trim() == pathToAdd.Trim()))
+                {
+                    Debug.Log(".gitignore is found, updating.");
+                    File.AppendAllText(gitignorePath, pathToAdd + Environment.NewLine);
+                }
+                else
+                {
+                    Debug.Log("The specified path is already in .gitignore");
+                }
+            }
+        }
         #endregion
     }
 }

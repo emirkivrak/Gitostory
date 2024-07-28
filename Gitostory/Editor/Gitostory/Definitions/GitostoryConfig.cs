@@ -1,10 +1,4 @@
-using JetBrains.Annotations;
-using LibGit2Sharp;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
 using UnityEditor;
-using UnityEngine;
 
 namespace GitostorySpace
 {
@@ -14,6 +8,7 @@ namespace GitostorySpace
         {
             public const string TEMP_ROOT_KEY_DEFAULT = "Gitostory_TempRoot";
             public const string REPOSITORY_ROOT_KEY_DEFAULT = "Gitostory_RepositoryRoot";
+            public const string GITIGNORE_PATH_KEY_DEFAULT = "Gitostory_GitignorePath";
 
             public static string TEMP_ROOT
             {
@@ -33,6 +28,30 @@ namespace GitostorySpace
                     return EditorPrefs.GetString(REPOSITORY_ROOT_KEY_DEFAULT);
                 }
                 set => EditorPrefs.SetString(REPOSITORY_ROOT_KEY_DEFAULT, value);
+            }
+
+            public static string GITIGNORE_PATH
+            {
+                get => EditorPrefs.GetString(GITIGNORE_PATH_KEY_DEFAULT, ".gitignore");
+                set => EditorPrefs.SetString(GITIGNORE_PATH_KEY_DEFAULT, value);
+            }
+        }
+
+        public static class Preferences
+        {
+            public const string RESET_WITH_META_FILE_KEY_DEFAULT = "Gitostory_ResetWithMetaFile";
+            public const string TRACK_RENAMES_AND_FOLDER_CHANGES_KEY_DEFAULT = "Gitostory_TrackRenamesAndFolderChanges";
+
+            public static bool ResetWithMetaFile
+            {
+                get => EditorPrefs.GetBool(RESET_WITH_META_FILE_KEY_DEFAULT, true);
+                set => EditorPrefs.SetBool(RESET_WITH_META_FILE_KEY_DEFAULT, value);
+            }
+
+            public static bool TrackRenamesAndFolderChanges
+            {
+                get => EditorPrefs.GetBool(TRACK_RENAMES_AND_FOLDER_CHANGES_KEY_DEFAULT, false);
+                set => EditorPrefs.SetBool(TRACK_RENAMES_AND_FOLDER_CHANGES_KEY_DEFAULT, value);
             }
         }
     }

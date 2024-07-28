@@ -27,6 +27,8 @@ public class GitostoryUsageFromCodeExample
             Debug.Log("Commit Author: " + commit.Author);
         }
 
+        gitostory.GetCurrentBranchName();
+
 
         // Get a older version of file. uncomment for test.
         //var previousCommitFilePath = gitostory.GetFilePreviousVersion(allCommitsForFile[0].CommitHash, ExampleFilePath);
