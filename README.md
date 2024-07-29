@@ -61,12 +61,19 @@ It is recommended to use **Git version 2.20 or later** to ensure compatibility w
 
 ![Show History](Images/gitostory_usg.png)
 
-### Comparing Versions
+### Preview Any Asset Instantly
+
+1. In the history window, select a commit.
+
+![Comparison Gif](Images/gitostory_usage.gif) 
+
+### Comparing Prefabs 
 
 1. In the history window, select a commit.
 2. Click `Open in Prefab Comparison` or the appropriate comparison option.
 
 ![Comparison View](Images/gitostory_prefab.png) 
+
 
 ### Rolling Back
 
